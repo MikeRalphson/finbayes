@@ -17,27 +17,26 @@
 //var readline = require('readline');
 
 //persistent localstorage https://www.npmjs.com/package/node-localstorage
-var LocalStorage = require('node-localstorage').LocalStorage;
-localStorage = new LocalStorage('./localStorage');
+//var LocalStorage = require('node-localstorage').LocalStorage;
+//localStorage = new LocalStorage('./localStorage');
 
-var classifier = require('classifier'); //https://www.npmjs.com/package/classifier
+//var classifier = require('classifier'); //https://www.npmjs.com/package/classifier
+var natural = require('natural');
 
-var bayes = new classifier.Bayesian({
-  backend: {
-    type: 'LocalStorage',
-    options: {
-      //hostname: 'localhost', // default 
-      //port: 6379,            // default 
-      name: 'finbayes'      // namespace for persisting 
-    }
-  }
+var bayes = new natural.BayesClassifier();
+
+//var state = localStorage.getItem('classifierState');
+//if (state) bayes.fromJSON(state);
+
+//To recall from the classifier.json saved above:
+natural.BayesClassifier.load('classifier.json', null, function(err, classifier) {
+    console.log(bayes.classify('i have unexpectedly resigned'));
+    console.log(bayes.classify('results are brilliant'));
 });
 
-var state = localStorage.getItem('classifierState');
-if (state) bayes.fromJSON(state);
-
-bayes.train("The market has been unexpectedly turbulent", 'bear');
-bayes.train("Results have outperformed market expectations", 'bull');
+bayes.addDocument("The market has been unexpectedly turbulent", 'bear');
+bayes.addDocument("Results have outperformed market expectations", 'bull');
+bayes.train();
  
 var category = bayes.classify("in turbulent trading");   // "bear"
 console.log(category);
@@ -45,7 +44,11 @@ console.log(category);
 var category = bayes.classify("results in line with expectations");   // "bull"
 console.log(category);
 
-localStorage.setItem('classifierState',JSON.stringify(bayes.toJSON(), null, 2));
+bayes.save('classifier.json', function(err, bayes) {
+    // the classifier is saved to the classifier.json file!
+});
+
+//localStorage.setItem('classifierState',JSON.stringify(bayes.toJSON(), null, 2));
 
 //var rl = readline.createInterface({
 //  input: process.stdin,
