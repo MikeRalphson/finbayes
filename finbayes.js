@@ -16,48 +16,34 @@
 
 //var readline = require('readline');
 
-//persistent localstorage https://www.npmjs.com/package/node-localstorage
-//var LocalStorage = require('node-localstorage').LocalStorage;
-//localStorage = new LocalStorage('./localStorage');
-
-//var classifier = require('classifier'); //https://www.npmjs.com/package/classifier
+var fs = require('fs');
 var natural = require('natural');
 
 var bayes = new natural.BayesClassifier();
 
-//var state = localStorage.getItem('classifierState');
-//if (state) bayes.fromJSON(state);
+var filename;
+var classification;
+var data;
 
-//To recall from the classifier.json saved above:
-natural.BayesClassifier.load('classifier.json', null, function(err, classifier) {
-    console.log(bayes.classify('i have unexpectedly resigned'));
-    console.log(bayes.classify('results are brilliant'));
-});
+if (process.argv.length>2) {
+	filename = process.argv[2];
+	data = fs.readFileSync(filename,'utf8');
 
-bayes.addDocument("The market has been unexpectedly turbulent", 'bear');
-bayes.addDocument("Results have outperformed market expectations", 'bull');
-bayes.train();
- 
-var category = bayes.classify("in turbulent trading");   // "bear"
-console.log(category);
-
-var category = bayes.classify("results in line with expectations");   // "bull"
-console.log(category);
-
-bayes.save('classifier.json', function(err, bayes) {
-    // the classifier is saved to the classifier.json file!
-});
-
-//localStorage.setItem('classifierState',JSON.stringify(bayes.toJSON(), null, 2));
-
-//var rl = readline.createInterface({
-//  input: process.stdin,
-//  output: process.stdout
-//});
-
-//console.log('Last time you typed: '+localStorage.getItem('closingMessage'));
-//rl.question("Press enter to exit", function(answer) {
-//  //console.log("Thank you for your valuable feedback:", answer);
-//  localStorage.setItem('closingMessage', answer);
-//  rl.close();
-//});
+	natural.BayesClassifier.load('classifier.json', null, function(err, classifier) {
+		bayes = classifier;
+		if (process.argv.length>3) {
+			classification = process.argv[3];
+			bayes.addDocument(data,classification);
+			bayes.train();
+			bayes.save('classifier.json', function(err, bayes) {
+				// the classifier is saved to the classifier.json file
+			});
+		}
+		else {
+			console.log('Classification: '+bayes.classify(data));
+		}
+	});
+}
+else {
+	console.log('Usage: '+process.argv[1]+' filename [classification]');
+}
