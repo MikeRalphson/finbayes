@@ -1,4 +1,4 @@
-// retrieve example documents from 
+// retrieve example documents from
 // http://www.investegate.co.uk/ArticlePrint.aspx?id=201511201730025235G
 
 // uk share price info from
@@ -19,30 +19,44 @@
 var fs = require('fs');
 var natural = require('natural');
 
-var bayes = new natural.BayesClassifier();
+function main(bayes) {
+	var classification;
+	if (process.argv.length>3) {
+		classification = process.argv[3];
+		bayes.addDocument(data,classification);
+		bayes.train();
+		bayes.save('classifier.json', function(err, bayes) {
+			// the classifier is saved to the classifier.json file
+		});
+	}
+	else {
+		try {
+			classification = bayes.classify(data);
+			console.log('Classification: '+classification);
+		}
+		catch (err) {
+			console.log(err);
+		}
+	}
+}
 
 var filename;
-var classification;
 var data;
 
 if (process.argv.length>2) {
 	filename = process.argv[2];
 	data = fs.readFileSync(filename,'utf8');
 
-	natural.BayesClassifier.load('classifier.json', null, function(err, classifier) {
-		bayes = classifier;
-		if (process.argv.length>3) {
-			classification = process.argv[3];
-			bayes.addDocument(data,classification);
-			bayes.train();
-			bayes.save('classifier.json', function(err, bayes) {
-				// the classifier is saved to the classifier.json file
-			});
-		}
-		else {
-			console.log('Classification: '+bayes.classify(data));
-		}
-	});
+	try {
+		fs.statSync('classifier.json');
+		natural.BayesClassifier.load('classifier.json', null, function(err, classifier) {
+			main(classifier);
+		});
+	}
+	catch (err) {
+		// json file doesn't exist
+		main(new natural.BayesClassifier());
+	}
 }
 else {
 	console.log('Usage: '+process.argv[1]+' filename [classification]');
